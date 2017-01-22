@@ -1,0 +1,8 @@
+# update scripts
+upload.sh
+upload.log
+date.log
+
+# .DS_Store
+.DS_Store
+
