@@ -23,6 +23,42 @@ var handler = {
 	"": function (req, res, argv) {
 		res.qres(static_addr["static/cmd.html"].dat);
 		return;
+	},
+
+	"log": function (req, res, argv) {
+		if (argv.length < 2) {
+			res.qerr(400, "Too less argument");
+		} else {
+			switch (argv[1]) {
+				case "open":
+					var logno = parseInt(argv[2]);
+					if (!isNaN(logno)) {
+						res.qerr(400, "log " + logno + " is not ready");
+					} else {
+						res.qerr(400, "It's not a log number...");
+					}
+
+					break;
+
+				case "edit":
+					var logno = parseInt(argv[2]);
+					if (!isNaN(logno)) {
+						res.qerr(400, "log " + logno + " is locked");
+					} else {
+						res.qerr(400, "It's not a log number...");
+					}
+
+					break;
+
+				case "status":
+					res.qerr(400, "I'm pretty fine");
+					break;
+
+				default:
+					res.qerr(400, "I don't know this one...");
+					break;
+			}
+		}
 	}
 };
 
