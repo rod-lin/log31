@@ -1,45 +1,75 @@
-var http = require("http");
-var fs = require("fs");
+var fs			= require("fs");
+var url			= require("url");
+var http		= require("http");
 
-var cl_script = fs.readFileSync("cl.js");
+Object.prototype.own = Object.prototype.hasOwnProperty;
 
-var cl_code = ""
-var comp = function (sth) { cl_code += " " + sth; return comp; };
+var static_addr = {};
 
-comp
-	("<html>")
-		("<body style='padding: 0; margin: 0;'>")
-			("<script>")
-				(cl_script)
-			("</script>")
-			("<textarea")
-				("id='log31'")
-				("style='")
-					("width: 100%;")
-					("height: 100%;")
-					("border: 0;")
-					("padding: 31px;")
-					("margin: 0;")
-					("resize: none;'")
-				("spellcheck=false")
-				("onkeydown='cl_keydown(event)'")
-				("onkeyup='cl_parseText()'")
-			(">")
-			("</textarea>")
-		("</body>")
-	("</html>")
-;
+var readStatic = function (path, type) {
+	static_addr[path] = {
+		dat: fs.readFileSync(path),
+		type: type || ""
+	};
+	
+	return;
+}
+
+readStatic("static/cmd.html", "text/html");
+readStatic("static/err.html", "text/html");
+readStatic("static/css/cmd.css", "text/css");
+
+var handler = {
+	"": function (req, res, argv) {
+		res.qres(static_addr["static/cmd.html"].dat);
+		return;
+	}
+};
+
+// quick response
+http.ServerResponse.prototype.qres = function (dat, type) {
+	this.writeHead(200, { "Content-Type": type || "text/html" });
+	this.write(dat);
+	this.end();
+
+	return;
+}
+
+// quick error
+http.ServerResponse.prototype.qerr = function (code, msg, type) {
+	var tmpl = static_addr["static/err.html"].dat.toString();
+
+	this.writeHead(code, { "Content-Type": type || "text/html" });
+	this.write(tmpl.replace("<$message>", msg));
+	this.end();
+
+	console.log(new Date() + ": error " + code + ": " + msg);
+
+	return;
+}
 
 var serv = new http.Server();
 
 serv.on("request", function (req, res) {
-	res.writeHead(200, { "content-type": "text/html" });
+	var date = new Date();
+	var purl = url.parse(req.url);
+	var path = purl.pathname.substring(1);
 
-	// var write = function (sth) { res.write(sth); return write; }
+	console.log(date + ": request \"" + path + "\"");
 
-	res.write(cl_code);
+	if (static_addr.own(path)) {
+		res.qres(static_addr[path].dat, static_addr[path].type);
+	} else {
+		var argv = path.split("/");
 
-	res.end();
+		if (handler.own(argv[0])) {
+			handler[argv[0]](req, res, argv);
+		} else {
+			res.qerr(400, "She... she took it away...");
+		}
+	}
+
+	return;
 });
 
 serv.listen(3131);

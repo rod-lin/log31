@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta http-equiv="Pragma" content="no-cache">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" href="/static/css/cmd.css" />
+	</head>
+
+	<body style="padding: 0; margin: 0;">
+		<script>
+			String.prototype.trim = function () {
+				return this.replace(/(^\s*)|(\s*$)/g, "");
+			};
+
+			Array.prototype.choose = function () {
+				return this[Math.floor(Math.random() * this.length + 0)];
+			};
+
+			Object.prototype.addClass = function (cls) {
+				var allc = this.className.split(/\s+/g);
+
+				if (allc.indexOf(cls) == -1) {
+					allc.push(cls);
+					this.className = allc.join(" ");
+
+					return true;
+				}
+
+				return false;
+			};
+
+			Object.prototype.removeClass = function (cls) {
+				var allc = this.className.split(/\s+/g);
+				var i = allc.indexOf(cls);
+
+				if (i == -1) return false;
+
+				allc.splice(i, 1);
+
+				this.className = allc.join(" ");
+
+				return true;
+			};
+
+			function cmd_effChangeTitle(msg, callback, timeout) {
+				var e = document.getElementById("cmd-title");
+				var orig = e.innerHTML;
+				var i;
+				var total = 0;
+
+				timeout = timeout || 500;
+
+				var delay = timeout / orig.length / 2;
+
+				for (i = 0; i < orig.length; i++) {
+					total += Math.random() * delay + delay;
+					setTimeout(function () {
+						e.innerHTML = e.innerHTML.substr(0, e.innerHTML.length - 1);
+					}, total);
+				}
+
+				delay = timeout / msg.length / 2;
+				// total += delay;
+
+				setTimeout(function () {
+					for (i = 1; i <= msg.length; i++) {
+						total += Math.random() * delay + delay;
+						setTimeout((function (i) {
+							if (i == msg.length) return function () {
+								e.innerHTML = msg.substr(0, i);
+							}; else return function () {
+								e.innerHTML = msg.substr(0, i);
+							};
+						})(i), total);
+					}
+
+					setTimeout(callback, total);
+				}, total);
+			}
+
+			var cmd_effTitleLock = false;
+
+			function cmd_quickMessage(msg, timeout, callback) {
+				var e = document.getElementById("cmd-title");
+				var orig = "log31"; // e.innerHTML;
+
+				if (cmd_effTitleLock) return;
+				cmd_effTitleLock = true;
+
+				cmd_effChangeTitle(msg, function () {
+					setTimeout(function() {
+						cmd_effChangeTitle(orig, function () { cmd_effTitleLock = false; if (callback) callback(); });
+					}, timeout || 3000);
+				});
+
+				return;
+			}
+
+			function cmd_longMessage(msg, callback) {
+				if (cmd_effTitleLock) return;
+				cmd_effTitleLock = true;
+
+				cmd_effChangeTitle(msg, function () { cmd_effTitleLock = false; if (callback) callback(); });
+
+				return;
+			}
+
+			function cmd_effExitTitle() {
+				var e = document.getElementById("cmd-textbox");
+				
+				e.disabled = true;
+				e.addClass("cmd-exit");
+
+				document.getElementById("cmd-underline").addClass("cmd-exit");
+				document.getElementById("cmd-mainbox").addClass("cmd-exit");
+				
+				return;
+			}
+
+			var cmd_cmd_handler = {
+				"log": function (argv) {
+					// cmd_quickMessage("hello");
+					cmd_longMessage("", function () {
+						cmd_longMessage("welcome!", function () {
+							setTimeout(function () {
+								cmd_effExitTitle();
+
+								setTimeout(function () {
+									cmd_updateMainBoxPos();
+								}, 300);
+
+								setTimeout(function () {
+									document.body.style.opacity = "0";
+								}, 2500);
+							}, 1000);
+						});
+					});
+				},
+
+				"color": function (argv) {
+					if (argv.length < 2) {
+						cmd_quickMessage("too less arguments");
+						return;
+					}
+
+					var e = document.getElementById("cmd-bg");
+					var color_box = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#34495E", "#E67E22", "#E74C3C", "#313131" ];
+					var arg1 = argv[1];
+
+					if (arg1 == "change") {
+						e.style.background = color_box.choose();
+					} else if (arg1.match(/(#[0-9A-Za-z]+)/g)) {
+						e.style.background = arg1;
+					}
+				}
+			};
+
+			function cmd_parseCommand() {
+				var e = document.getElementById("cmd-textbox");
+				var argv = e.value.trim().split(/\s+/g);
+				var handler = cmd_cmd_handler[argv[0]];
+
+				e.value = "";
+				e.placeholder = "";
+				e.blur();
+
+				if (handler) {
+					handler(argv);
+					e.focus();
+				} else {
+					cmd_quickMessage(":( no such command...", null, function () {
+						e.focus();
+					});
+				}
+
+				return;
+			}
+
+			function cmd_keydown(e) {
+				var c = e.keyCode;
+				var prevdef = function () {
+					e.preventDefault();
+					e.returnValue = false;
+				};
+
+				var speck =
+					(e.ctrlKey ? 4 : 0) | /* 0b100 */
+					(e.altKey ? 2 : 0) | /* 0b10 */
+					(e.shiftKey ? 1 : 0); /* 0b1 */
+
+				var c = (speck << 8) | c;
+
+				if (c == 13) { // enter
+					cmd_parseCommand();
+				}
+			}
+
+			function cmd_updateMainBoxPos() {
+				var e = document.getElementById("cmd-mainbox");
+				var bg = document.getElementById("cmd-bg");
+
+				e.style.top = ((bg.clientHeight - e.offsetHeight) / 2) + "px";
+
+				return;
+			}
+
+			window.onload = function () {
+				document.getElementById("cmd-textbox").removeAttribute("disabled");
+				cmd_updateMainBoxPos();
+			};
+
+			window.onresize = cmd_updateMainBoxPos;
+		</script>
+		<div id="cmd-bg">
+			<div id="cmd-mainbox" class="cmd-mainbox">
+				<span id="cmd-title" class="cmd-title" style="font-weight: bold;">log31</span><br>
+				<input
+					id="cmd-textbox"
+					class="cmd-textbox"
+					spellcheck=false
+					placeholder="something?"
+					onkeydown="cmd_keydown(event)"
+				><br>
+				<div id="cmd-underline" class="cmd-underline"></div>
+			</div>
+		</div>
+	</body>
+</html>

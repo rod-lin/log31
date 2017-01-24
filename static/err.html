@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta http-equiv="Pragma" content="no-cache">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" href="/static/css/cmd.css" />
+	</head>
+
+	<body style="padding: 0; margin: 0;">
+		<script>
+			
+			Array.prototype.choose = function () {
+				return this[Math.floor(Math.random() * this.length + 0)];
+			};
+
+			function cmd_updateMainBoxPos() {
+				var e = document.getElementById("cmd-mainbox");
+				var bg = document.getElementById("cmd-bg");
+
+				e.style.top = ((bg.clientHeight - e.offsetHeight) / 2) + "px";
+
+				return;
+			}
+
+			window.onload = function () {
+				cmd_updateMainBoxPos();
+				document.getElementById("cmd-bg").style.background = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#34495E", "#E67E22", "#E74C3C" ].choose();
+			};
+
+			window.onresize = cmd_updateMainBoxPos;
+
+		</script>
+		<div id="cmd-bg">
+			<div id="cmd-mainbox" class="cmd-mainbox">
+				<span id="cmd-title" class="cmd-title" style="font-weight: bold;"><$message></span>
+			</div>
+		</div>
+	</body>
+</html>
