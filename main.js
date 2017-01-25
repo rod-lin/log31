@@ -18,6 +18,7 @@ var readStatic = function (path, type) {
 readStatic("static/cmd.html", "text/html");
 readStatic("static/err.html", "text/html");
 readStatic("static/css/cmd.css", "text/css");
+readStatic("static/js/util.js", "application/x-javascript");
 
 var handler = {
 	"": function (req, res, argv) {
@@ -27,7 +28,7 @@ var handler = {
 
 	"log": function (req, res, argv) {
 		if (argv.length < 2) {
-			res.qerr(400, "Too less argument");
+			res.qerr(400, "Too less arguments");
 		} else {
 			switch (argv[1]) {
 				case "open":
@@ -55,7 +56,7 @@ var handler = {
 					break;
 
 				default:
-					res.qerr(400, "I don't know this one...");
+					res.qerr(400, "I don't know this option...");
 					break;
 			}
 		}
@@ -76,7 +77,7 @@ http.ServerResponse.prototype.qerr = function (code, msg, type) {
 	var tmpl = static_addr["static/err.html"].dat.toString();
 
 	this.writeHead(code, { "Content-Type": type || "text/html" });
-	this.write(tmpl.replace("<$message>", msg));
+	this.write(tmpl.replace(/<\$suc>/g, "false").replace(/<\$msg>/g, msg).replace(/<\$code>/g, code.toString()));
 	this.end();
 
 	console.log(new Date() + ": error " + code + ": " + msg);

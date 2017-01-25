@@ -7,11 +7,17 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 		<link rel="stylesheet" href="/static/css/cmd.css" />
+		<script src="/static/js/util.js"></script>
 	</head>
 
 	<body style="padding: 0; margin: 0;">
 		<script>
-			
+			window.log31msg = {
+				suc: <$suc>,
+				code: <$code>,
+				msg: "<$msg>"
+			};
+
 			Array.prototype.choose = function () {
 				return this[Math.floor(Math.random() * this.length + 0)];
 			};
@@ -32,22 +38,21 @@
 
 			window.onload = function () {
 				cmd_updateMainBoxPos();
-				document.getElementById("cmd-bg").style.background = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#34495E", "#E67E22", "#E74C3C" ].choose();
+				document.getElementById("cmd-bg").style.background = [
+					"#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#E67E22", "#E74C3C"
+				].choose();
 
-				setTimeout(function () {
-					document.body.style.opacity = "0";
-					setTimeout(function () {
-						cmd_goto("/");
-					}, 300);
-				}, 3000);
+				var font = getCookie("log31-font");
+				if (font) {
+					document.body.style["font-family"] = font;
+				}
 			};
 
 			window.onresize = cmd_updateMainBoxPos;
-
 		</script>
 		<div id="cmd-bg">
 			<div id="cmd-mainbox" class="cmd-mainbox" style="margin-bottom: 4em;">
-				<span id="cmd-title" class="cmd-title" style="font-weight: bold;"><$message></span>
+				<span id="cmd-title" class="cmd-title" style="font-weight: bold;"><$code><br><$msg></span>
 			</div>
 		</div>
 	</body>

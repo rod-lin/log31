@@ -7,9 +7,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 		<link rel="stylesheet" href="/static/css/cmd.css" />
+		<script src="/static/js/util.js"></script>
 	</head>
 
-	<body style="opacity: 0;">
+	<body>
 		<script>
 			String.prototype.trim = function () {
 				return this.replace(/(^\s*)|(\s*$)/g, "");
@@ -122,34 +123,121 @@
 				return;
 			}
 
+			function cmd_effShowTitle() {
+				document.getElementById("cmd-textbox").removeClass("cmd-exit");
+				document.getElementById("cmd-mainbox").removeClass("cmd-exit");
+				return;
+			}
+
 			function cmd_goto(url) {
 				window.location.href = url;
 				return;
 			}
 
-			var cmd_color_box = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#34495E", "#E67E22", "#E74C3C", "#313131" ];
+			function cmd_setFrameSrc(url) {
+				document.getElementById("cmd-main-frame").src = url;
+				return;
+			}
 
-			var cmd_cmd_handler = {
-				"log": function (argv) {
-					// cmd_quickMessage("hello");
-					cmd_longMessage("", function () {
-						cmd_longMessage("conneting...", function () {
-							setTimeout(function () {
-								cmd_effExitTitle();
+			function cmd_setFrameOnload(handler) {
+				var e = document.getElementById("cmd-main-frame");
 
+				if (e.attachEvent) {
+					var h = function () {
+						e.detachEvent("onload", h);
+						handler();
+					}
+
+					e.attachEvent("onload", h);
+				} else {
+					e.onload = handler;
+				}
+
+				return;
+			}
+
+			function cmd_showFrame() {
+				var e = document.getElementById("cmd-main-frame");
+
+				e.style.top = "0";
+
+				return;
+			}
+
+			function cmd_hideFrame() {
+				var e = document.getElementById("cmd-main-frame");
+
+				e.style.top = "100%";
+
+				return;
+			}
+
+			function cmd_getFrameMsg() {
+				return document.getElementById("cmd-main-frame").contentWindow.log31msg;
+			}
+
+			var cmd_color_box = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#E67E22", "#E74C3C", "#313131" ];
+			var cmd_default_font = "";
+
+			var cmd_defaultHandler = function (argv) {
+				// cmd_quickMessage("hello");
+				cmd_longMessage("conneting...", function () {
+					cmd_effExitTitle();
+
+					setTimeout(cmd_updateMainBoxPos, 300);
+
+					var end = false;
+					var loaded = false;
+					var cast = function () {
+						setTimeout(function () {
+							cmd_showFrame();
+							var msg = cmd_getFrameMsg();
+
+							if (!msg.suc) {
 								setTimeout(function () {
-									cmd_updateMainBoxPos();
-								}, 300);
-
-								setTimeout(function () {
-									document.body.style.opacity = "0";
+									cmd_hideFrame();
 									setTimeout(function () {
-										cmd_goto(argv.join("/"));
+										cmd_effShowTitle();
+										setTimeout(function () {
+											cmd_updateMainBoxPos();
+											setTimeout(function () {
+												document.getElementById("cmd-textbox").removeAttribute("disabled");
+												document.getElementById("cmd-underline").removeClass("cmd-exit");
+											}, 300);
+										}, 500);
+										cmd_longMessage("log31");
 									}, 300);
 								}, 2500);
-							}, 1000);
-						});
+							}
+						}, 300);
+					};
+
+					cmd_setFrameSrc(argv.join("/"));
+					cmd_setFrameOnload(function () {
+						if (end) cast();
+						loaded = true;
 					});
+
+					setTimeout(function () {
+						if (loaded) cast();
+						end = true;
+					}, 1000);
+				});
+
+				return;
+			};
+
+			var cmd_cmd_handler = {
+				"log": cmd_defaultHandler,
+
+				"goto": function (argv) {
+					if (argv.length < 2) {
+						cmd_quickMessage("too less arguments");
+					} else {
+						cmd_goto(argv[1]);
+					}
+
+					return;
 				},
 
 				"color": function (argv) {
@@ -176,15 +264,44 @@
 						"hi buddy", "long time no see, huh?",
 						"what's up"
 					].choose());
+
+					return;
+				},
+
+				"font": function (argv) {
+					if (argv.length < 2) {
+						cmd_quickMessage("too less arguments");
+					} else {
+						var e = document.body;
+
+						if (argv[1] == "default") {
+							e.style["font-family"] = cmd_default_font;
+							cmd_updateMainBoxPos();
+							setCookie("log31-font", cmd_default_font);
+						} else {
+							e.style["font-family"] = argv[1];
+							cmd_updateMainBoxPos();
+							setCookie("log31-font", argv[1]);
+						}
+					}
+
 					return;
 				}
 			};
 
+			var cmd_cmdHist = [];
+			var cmd_curHist = -1;
+
 			function cmd_parseCommand() {
 				var e = document.getElementById("cmd-textbox");
-				var argv = e.value.trim().split(/\s+/g);
+				var orig = e.value;
+				var argv = orig.trim().split(/\s+/g);
 
 				e.value = "";
+
+				if (argv[0] == "") return;
+				cmd_cmdHist.push(orig);
+
 				e.placeholder = "";
 				e.blur();
 
@@ -214,8 +331,37 @@
 
 				var c = (speck << 8) | c;
 
-				if (c == 13) { // enter
-					cmd_parseCommand();
+				switch (c) {
+					case 13: // enter
+						cmd_curHist = -1;
+						cmd_parseCommand();
+						break;
+
+					case 38: // up
+						if (cmd_curHist == -1) {
+							if (cmd_cmdHist.length) {
+								cmd_curHist = cmd_cmdHist.length - 1;
+								document.getElementById("cmd-textbox").value = cmd_cmdHist[cmd_curHist];
+							}
+						} else if (cmd_curHist) {
+							cmd_curHist--;
+							document.getElementById("cmd-textbox").value = cmd_cmdHist[cmd_curHist];
+						}
+
+						break;
+
+					case 40: // down
+						if (cmd_curHist != -1) {
+							if (cmd_curHist + 1 < cmd_cmdHist.length) {
+								cmd_curHist++;
+								document.getElementById("cmd-textbox").value = cmd_cmdHist[cmd_curHist];
+							} else {
+								cmd_curHist = -1;
+								document.getElementById("cmd-textbox").value = "";
+							}
+						}
+
+						break;
 				}
 			}
 
@@ -234,13 +380,20 @@
 				e.removeAttribute("disabled");
 				e.focus();			
 
-				document.body.style.opacity = "1";
+				document.getElementById("cmd-bg").style.opacity = "1";
 				cmd_updateMainBoxPos();
+
+				cmd_default_font = document.body.style["font-family"];
+
+				var font = getCookie("log31-font");
+				if (font) {
+					document.body.style["font-family"] = font;
+				}
 			};
 
 			window.onresize = cmd_updateMainBoxPos;
 		</script>
-		<div id="cmd-bg">
+		<div id="cmd-bg" style="opacity: 0;">
 			<div id="cmd-mainbox" class="cmd-mainbox">
 				<span id="cmd-title" class="cmd-title" style="font-weight: bold;">log31</span><br>
 				<input
@@ -253,5 +406,6 @@
 				<div id="cmd-underline" class="cmd-underline"></div>
 			</div>
 		</div>
+		<iframe id="cmd-main-frame" class="cmd-main-frame" style="top: 100%;"></iframe>
 	</body>
 </html>
