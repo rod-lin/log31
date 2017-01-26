@@ -4,7 +4,7 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<meta http-equiv="Pragma" content="no-cache">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 		<link rel="stylesheet" href="/static/css/cmd.css" />
 		<script src="/static/js/util.js"></script>
@@ -59,9 +59,10 @@
 				var delay = timeout / orig.length / 2;
 
 				for (i = 0; i < orig.length; i++) {
-					total += Math.random() * delay + delay;
+					total += delay;
 					setTimeout(function () {
 						e.innerHTML = e.innerHTML.substr(0, e.innerHTML.length - 1);
+						cmd_updateMainBoxPos();
 					}, total);
 				}
 
@@ -70,12 +71,14 @@
 
 				setTimeout(function () {
 					for (i = 1; i <= msg.length; i++) {
-						total += Math.random() * delay + delay;
+						total += delay;
 						setTimeout((function (i) {
 							if (i == msg.length) return function () {
 								e.innerHTML = msg.substr(0, i);
+								cmd_updateMainBoxPos();
 							}; else return function () {
 								e.innerHTML = msg.substr(0, i);
+								cmd_updateMainBoxPos();
 							};
 						})(i), total);
 					}
@@ -159,6 +162,7 @@
 			function cmd_showFrame() {
 				var e = document.getElementById("cmd-main-frame");
 
+				// e.style.display = "";
 				e.style.top = "0";
 
 				return;
@@ -167,6 +171,7 @@
 			function cmd_hideFrame() {
 				var e = document.getElementById("cmd-main-frame");
 
+				// e.style.display = "none";
 				e.style.top = "100%";
 
 				return;
@@ -183,7 +188,6 @@
 				// cmd_quickMessage("hello");
 				cmd_longMessage("conneting...", function () {
 					cmd_effExitTitle();
-
 					setTimeout(cmd_updateMainBoxPos, 300);
 
 					var end = false;
@@ -193,7 +197,7 @@
 							cmd_showFrame();
 							var msg = cmd_getFrameMsg();
 
-							if (!msg.suc) {
+							if (msg && !msg.suc) {
 								setTimeout(function () {
 									cmd_hideFrame();
 									setTimeout(function () {
@@ -279,9 +283,9 @@
 							cmd_updateMainBoxPos();
 							setCookie("log31-font", cmd_default_font);
 						} else {
-							e.style["font-family"] = argv[1];
+							e.style["font-family"] = argv.slice(1).join(" ");
 							cmd_updateMainBoxPos();
-							setCookie("log31-font", argv[1]);
+							setCookie("log31-font", e.style["font-family"]);
 						}
 					}
 
@@ -317,12 +321,15 @@
 				return;
 			}
 
+			function cmd_prevdef(e) {
+				e.preventDefault && e.preventDefault();
+				e.returnValue = false;
+				return;
+			}
+
 			function cmd_keydown(e) {
 				var c = e.keyCode;
-				var prevdef = function () {
-					e.preventDefault();
-					e.returnValue = false;
-				};
+				var prevdef = cmd_prevdef;
 
 				var speck =
 					(e.ctrlKey ? 4 : 0) | /* 0b100 */

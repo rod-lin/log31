@@ -1,0 +1,10 @@
+@import "/static/font/UbuntuMono/import.css";
+
+body {
+	padding: 0;
+	margin: 0;
+
+	background: #FFF;
+
+	font-family: Ubuntu;
+}

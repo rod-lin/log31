@@ -1,8 +1,8 @@
 var fs			= require("fs");
 var url			= require("url");
 var http		= require("http");
-
-Object.prototype.own = Object.prototype.hasOwnProperty;
+var util		= require("./util.js");
+var log			= require("./log.js");
 
 var static_addr = {};
 
@@ -15,10 +15,18 @@ var readStatic = function (path, type) {
 	return;
 }
 
-readStatic("static/cmd.html", "text/html");
-readStatic("static/err.html", "text/html");
-readStatic("static/css/cmd.css", "text/css");
-readStatic("static/js/util.js", "application/x-javascript");
+util.walk("static", function (file) {
+	var type = "text/plain";
+	var match = file.match(/.*\.([^\.\\/]+)$/);
+
+	if (match) switch (match[1]) {
+		case "html": type = "text/html"; break;
+		case "css": type = "text/css"; break;
+		case "js": type = "application/x-javascript"; break;
+	}
+
+	readStatic(file, type);
+});
 
 var handler = {
 	"": function (req, res, argv) {
@@ -34,7 +42,13 @@ var handler = {
 				case "open":
 					var logno = parseInt(argv[2]);
 					if (!isNaN(logno)) {
-						res.qerr(400, "log " + logno + " is not ready");
+						var ret = log.parse(logno);
+
+						if (ret.suc) {
+							res.qres(ret.cont, "text/html");
+						} else {
+							res.qerr(400, ret.msg);
+						}
 					} else {
 						res.qerr(400, "It's not a log number...");
 					}
@@ -63,11 +77,15 @@ var handler = {
 	}
 };
 
+log.init();
+
 // quick response
 http.ServerResponse.prototype.qres = function (dat, type) {
 	this.writeHead(200, { "Content-Type": type || "text/html" });
 	this.write(dat);
 	this.end();
+
+	console.log(new Date() + ": response: \"" + dat.toString().substring(0, 10) + "...\"");
 
 	return;
 }
@@ -77,7 +95,11 @@ http.ServerResponse.prototype.qerr = function (code, msg, type) {
 	var tmpl = static_addr["static/err.html"].dat.toString();
 
 	this.writeHead(code, { "Content-Type": type || "text/html" });
-	this.write(tmpl.replace(/<\$suc>/g, "false").replace(/<\$msg>/g, msg).replace(/<\$code>/g, code.toString()));
+	this.write(tmpl.
+		replace(/<\$suc>/g, "false").
+		replace(/<\$msg>/g, code + "<br>" + msg).
+		replace(/<\$code>/g, code.toString())
+	);
 	this.end();
 
 	console.log(new Date() + ": error " + code + ": " + msg);
@@ -92,14 +114,14 @@ serv.on("request", function (req, res) {
 	var purl = url.parse(req.url);
 	var path = purl.pathname.substring(1);
 
-	console.log(date + ": request \"" + path + "\"");
+	console.log(date + ": " + req.connection.remoteAddress + ": " + req.method + " \"" + path + "\"");
 
-	if (static_addr.own(path)) {
+	if (static_addr.hasOwnProperty(path)) {
 		res.qres(static_addr[path].dat, static_addr[path].type);
 	} else {
 		var argv = path.split("/");
 
-		if (handler.own(argv[0])) {
+		if (handler.hasOwnProperty(argv[0])) {
 			handler[argv[0]](req, res, argv);
 		} else {
 			res.qerr(400, "She... she took it away...");

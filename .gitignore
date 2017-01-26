@@ -6,3 +6,6 @@ date.log
 # .DS_Store
 .DS_Store
 
+# nodejs
+/node_modules
+/log
