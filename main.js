@@ -36,7 +36,7 @@ var handler = {
 
 	"log": function (req, res, argv) {
 		if (argv.length < 2) {
-			res.qerr(400, "Too less arguments");
+			res.qerr(400, "too less arguments");
 		} else {
 			switch (argv[1]) {
 				case "open":
@@ -50,7 +50,7 @@ var handler = {
 							res.qerr(400, ret.msg);
 						}
 					} else {
-						res.qerr(400, "It's not a log number...");
+						res.qerr(400, "it's not a log number...");
 					}
 
 					break;
@@ -60,7 +60,7 @@ var handler = {
 					if (!isNaN(logno)) {
 						res.qerr(400, "log " + logno + " is locked");
 					} else {
-						res.qerr(400, "It's not a log number...");
+						res.qerr(400, "it's not a log number...");
 					}
 
 					break;
@@ -124,7 +124,7 @@ serv.on("request", function (req, res) {
 		if (handler.hasOwnProperty(argv[0])) {
 			handler[argv[0]](req, res, argv);
 		} else {
-			res.qerr(400, "She... she took it away...");
+			res.qerr(400, "she... she took it away...");
 		}
 	}
 

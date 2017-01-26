@@ -84,7 +84,7 @@ exports.get = function (logno) {
 
 exports.parse = function (logno) {
 	if (!logs[logno]) {
-		return { suc: false, msg: "Cannot find log " + logno };
+		return { suc: false, msg: "cannot find log " + logno };
 	}
 
 	var l = logs[logno];

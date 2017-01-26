@@ -7,48 +7,23 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 		<link rel="stylesheet" href="/static/css/cmd.css" />
-		<script src="/static/js/util.js"></script>
 	</head>
 
 	<body>
+		<script src="/static/js/util.js"></script>
+		<script src="/static/js/cmd.js"></script>
 		<script>
-			String.prototype.trim = function () {
-				return this.replace(/(^\s*)|(\s*$)/g, "");
-			};
+			var _cur_page = 0;
 
-			Array.prototype.choose = function () {
-				return this[Math.floor(Math.random() * this.length + 0)];
-			};
+			function _isOnMain() {
+				return _cur_page == 0;
+			}
 
-			Object.prototype.addClass = function (cls) {
-				var allc = this.className.split(/\s+/g);
+			function _isOnFrame() {
+				return _cur_page == 1;
+			}
 
-				if (allc.indexOf(cls) == -1) {
-					allc.push(cls);
-					this.className = allc.join(" ");
-
-					return true;
-				}
-
-				return false;
-			};
-
-			Object.prototype.removeClass = function (cls) {
-				var allc = this.className.split(/\s+/g);
-				var i = allc.indexOf(cls);
-
-				if (i == -1) return false;
-
-				allc.splice(i, 1);
-
-				this.className = allc.join(" ");
-
-				return true;
-			};
-
-			Object.prototype.own = Object.prototype.hasOwnProperty;
-
-			function cmd_effChangeTitle(msg, callback, timeout) {
+			function _setTitle(msg, callback, timeout) {
 				var e = document.getElementById("cmd-title");
 				var orig = e.innerHTML;
 				var i;
@@ -62,7 +37,7 @@
 					total += delay;
 					setTimeout(function () {
 						e.innerHTML = e.innerHTML.substr(0, e.innerHTML.length - 1);
-						cmd_updateMainBoxPos();
+						_updateMainBoxPos();
 					}, total);
 				}
 
@@ -75,10 +50,10 @@
 						setTimeout((function (i) {
 							if (i == msg.length) return function () {
 								e.innerHTML = msg.substr(0, i);
-								cmd_updateMainBoxPos();
+								_updateMainBoxPos();
 							}; else return function () {
 								e.innerHTML = msg.substr(0, i);
-								cmd_updateMainBoxPos();
+								_updateMainBoxPos();
 							};
 						})(i), total);
 					}
@@ -87,34 +62,9 @@
 				}, total);
 			}
 
-			var cmd_effTitleLock = false;
+			var _title_lock = false;
 
-			function cmd_quickMessage(msg, timeout, callback) {
-				var e = document.getElementById("cmd-title");
-				var orig = "log31"; // e.innerHTML;
-
-				if (cmd_effTitleLock) return;
-				cmd_effTitleLock = true;
-
-				cmd_effChangeTitle(msg, function () {
-					setTimeout(function() {
-						cmd_effChangeTitle(orig, function () { cmd_effTitleLock = false; if (callback) callback(); });
-					}, timeout || 2000);
-				});
-
-				return;
-			}
-
-			function cmd_longMessage(msg, callback) {
-				if (cmd_effTitleLock) return;
-				cmd_effTitleLock = true;
-
-				cmd_effChangeTitle(msg, function () { cmd_effTitleLock = false; if (callback) callback(); });
-
-				return;
-			}
-
-			function cmd_effExitTitle() {
+			function _exitTitle() {
 				var e = document.getElementById("cmd-textbox");
 				
 				e.disabled = true;
@@ -126,23 +76,18 @@
 				return;
 			}
 
-			function cmd_effShowTitle() {
+			function _showTitle() {
 				document.getElementById("cmd-textbox").removeClass("cmd-exit");
 				document.getElementById("cmd-mainbox").removeClass("cmd-exit");
 				return;
 			}
 
-			function cmd_goto(url) {
-				window.location.href = url;
-				return;
-			}
-
-			function cmd_setFrameSrc(url) {
+			function _setFrameSrc(url) {
 				document.getElementById("cmd-main-frame").src = url;
 				return;
 			}
 
-			function cmd_setFrameOnload(handler) {
+			function _setFrameOnload(handler) {
 				var e = document.getElementById("cmd-main-frame");
 
 				if (e.attachEvent) {
@@ -159,65 +104,128 @@
 				return;
 			}
 
-			function cmd_showFrame() {
+			function _setFrameOnKeyDown(handler) {
+				document.getElementById("cmd-main-frame").contentWindow.document.onkeydown = handler;
+				return;
+			}
+
+			function _focusFrame() {
+				document.getElementById("cmd-main-frame").focus();
+				return;
+			}
+
+			function _getFrameMsg() {
+				return document.getElementById("cmd-main-frame").contentWindow.log31msg;
+			}
+
+			function _showFrame() {
 				var e = document.getElementById("cmd-main-frame");
 
 				// e.style.display = "";
 				e.style.top = "0";
+				document.getElementById("cmd-quickcmd-container").style.display = "";
+
+				_focusFrame();
+				_setFrameOnKeyDown(function (e) {
+					if (e.keyCode == 27)
+						_triggerQuickCmd();
+				});
 
 				return;
 			}
 
-			function cmd_hideFrame() {
+			function _hideFrame() {
 				var e = document.getElementById("cmd-main-frame");
+
+				_hideQuickCmd();
 
 				// e.style.display = "none";
 				e.style.top = "100%";
+				document.getElementById("cmd-quickcmd-container").style.display = "none";
 
 				return;
 			}
 
-			function cmd_getFrameMsg() {
-				return document.getElementById("cmd-main-frame").contentWindow.log31msg;
+			function _quickTitleMsg(msg, timeout, callback) {
+				var e = document.getElementById("cmd-title");
+				var orig = "log31"; // e.innerHTML;
+
+				if (_title_lock) return;
+				_title_lock = true;
+
+				_setTitle(msg, function () {
+					setTimeout(function() {
+						_setTitle(orig, function () { _title_lock = false; if (callback) callback(); });
+					}, timeout || 2000);
+				});
+
+				return;
 			}
 
-			var cmd_color_box = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#E67E22", "#E74C3C", "#313131" ];
-			var cmd_default_font = "";
+			function _longTitleMsg(msg, callback) {
+				if (_title_lock) return;
+				_title_lock = true;
 
-			var cmd_defaultHandler = function (argv) {
-				// cmd_quickMessage("hello");
-				cmd_longMessage("conneting...", function () {
-					cmd_effExitTitle();
-					setTimeout(cmd_updateMainBoxPos, 300);
+				_setTitle(msg, function () { _title_lock = false; if (callback) callback(); });
+
+				return;
+			}
+
+			function _updateMainBoxPos() {
+				var e = document.getElementById("cmd-mainbox");
+				var bg = document.getElementById("cmd-bg");
+
+				e.style.top = ((bg.clientHeight - e.offsetHeight) / 2) + "px";
+
+				return;
+			}
+
+			function castToFrame() {
+				_showFrame();
+				_cur_page = 1;
+				return;
+			}
+
+			function castToMain() {
+				_hideFrame();
+				setTimeout(function () {
+					_showTitle();
+					setTimeout(function () {
+						_updateMainBoxPos();
+						setTimeout(function () {
+							document.getElementById("cmd-textbox").removeAttribute("disabled");
+							document.getElementById("cmd-textbox").focus();
+							document.getElementById("cmd-underline").removeClass("cmd-exit");
+						}, 300);
+					}, 500);
+					_longTitleMsg("log31");
+				}, 300);
+
+				_cur_page = 0;
+
+				return;
+			}
+
+			function _jumpDefaultHandler(argv) {
+				_longTitleMsg("conneting...", function () {
+					_exitTitle();
+					setTimeout(_updateMainBoxPos, 300);
 
 					var end = false;
 					var loaded = false;
 					var cast = function () {
 						setTimeout(function () {
-							cmd_showFrame();
-							var msg = cmd_getFrameMsg();
+							castToFrame();
+							var msg = _getFrameMsg();
 
 							if (msg && !msg.suc) {
-								setTimeout(function () {
-									cmd_hideFrame();
-									setTimeout(function () {
-										cmd_effShowTitle();
-										setTimeout(function () {
-											cmd_updateMainBoxPos();
-											setTimeout(function () {
-												document.getElementById("cmd-textbox").removeAttribute("disabled");
-												document.getElementById("cmd-underline").removeClass("cmd-exit");
-											}, 300);
-										}, 500);
-										cmd_longMessage("log31");
-									}, 300);
-								}, 2500);
+								setTimeout(castToMain, 2500);
 							}
 						}, 300);
 					};
 
-					cmd_setFrameSrc(argv.join("/"));
-					cmd_setFrameOnload(function () {
+					_setFrameSrc(argv.join("/"));
+					_setFrameOnload(function () {
 						if (end) cast();
 						loaded = true;
 					});
@@ -229,107 +237,59 @@
 				});
 
 				return;
-			};
+			}
 
-			var cmd_cmd_handler = {
-				"log": cmd_defaultHandler,
+			var _qc_has_shown = false;
 
-				"goto": function (argv) {
-					if (argv.length < 2) {
-						cmd_quickMessage("too less arguments");
-					} else {
-						cmd_goto(argv[1]);
-					}
+			function _hideQuickCmd() {
+				if (_isOnMain()) return;
+				document.getElementById("cmd-main-frame").style.top = "0";
+				// document.getElementById("cmd-quickcmd-container").style.opacity = "0";
+				document.getElementById("cmd-main-frame").focus();
+				_qc_has_shown = false;
 
-					return;
-				},
+				return;
+			}
 
-				"color": function (argv) {
-					if (argv.length < 2) {
-						cmd_quickMessage("too less arguments");
-					} else {
-						var e = document.getElementById("cmd-bg");
-						var arg1 = argv[1];
+			function _showQuickCmd() {
+				if (_isOnMain()) return;
+				document.getElementById("cmd-quickcmd-container").style.opacity = "1";
+				document.getElementById("cmd-main-frame").style.top
+				= document.getElementById("cmd-quickcmd-container").clientHeight + "px";
+				document.getElementById("cmd-quickcmd").focus();
+				document.getElementById("cmd-quickcmd").placeholder = "quick command";
+				_qc_has_shown = true;
 
-						if (arg1 == "change") {
-							e.style.background = cmd_color_box.choose();
-						} else if (arg1.match(/(#[0-9A-Za-z]+)/g)) {
-							e.style.background = arg1;
-						}
-					}
+				return;
+			}
 
-					return;
-				},
+			function _triggerQuickCmd() {
+				if (_isOnMain()) return;
 
-				"hello": function () {
-					document.getElementById("cmd-bg").style.background = cmd_color_box.choose();
-					cmd_quickMessage([
-						"how are you?", "it's a nice day, isn't it?",
-						"hi buddy", "long time no see, huh?",
-						"what's up"
-					].choose());
-
-					return;
-				},
-
-				"font": function (argv) {
-					if (argv.length < 2) {
-						cmd_quickMessage("too less arguments");
-					} else {
-						var e = document.body;
-
-						if (argv[1] == "default") {
-							e.style["font-family"] = cmd_default_font;
-							cmd_updateMainBoxPos();
-							setCookie("log31-font", cmd_default_font);
-						} else {
-							e.style["font-family"] = argv.slice(1).join(" ");
-							cmd_updateMainBoxPos();
-							setCookie("log31-font", e.style["font-family"]);
-						}
-					}
-
-					return;
-				}
-			};
-
-			var cmd_cmdHist = [];
-			var cmd_curHist = -1;
-
-			function cmd_parseCommand() {
-				var e = document.getElementById("cmd-textbox");
-				var orig = e.value;
-				var argv = orig.trim().split(/\s+/g);
-
-				e.value = "";
-
-				if (argv[0] == "") return;
-				cmd_cmdHist.push(orig);
-
-				e.placeholder = "";
-				e.blur();
-
-				if (cmd_cmd_handler.own(argv[0])) {
-					cmd_cmd_handler[argv[0]](argv);
-					e.focus();
+				if (_qc_has_shown) {
+					_hideQuickCmd();
 				} else {
-					cmd_quickMessage(":( no such command...", null, function () {
-						e.focus();
-					});
+					_showQuickCmd();
 				}
 
 				return;
 			}
 
-			function cmd_prevdef(e) {
+			////////////////////////////////////////////////////////
+
+			/* main command line */
+			var main_cmd = null;
+			var quick_cmd = null;
+
+			function _prevdef(e) {
 				e.preventDefault && e.preventDefault();
 				e.returnValue = false;
 				return;
 			}
 
-			function cmd_keydown(e) {
+			function _keydown(e, cmd) {
 				var c = e.keyCode;
-				var prevdef = cmd_prevdef;
+				var prevdef = _prevdef;
 
 				var speck =
 					(e.ctrlKey ? 4 : 0) | /* 0b100 */
@@ -339,66 +299,194 @@
 				var c = (speck << 8) | c;
 
 				switch (c) {
-					case 13: // enter
-						cmd_curHist = -1;
-						cmd_parseCommand();
-						break;
-
-					case 38: // up
-						if (cmd_curHist == -1) {
-							if (cmd_cmdHist.length) {
-								cmd_curHist = cmd_cmdHist.length - 1;
-								document.getElementById("cmd-textbox").value = cmd_cmdHist[cmd_curHist];
-							}
-						} else if (cmd_curHist) {
-							cmd_curHist--;
-							document.getElementById("cmd-textbox").value = cmd_cmdHist[cmd_curHist];
-						}
-
-						break;
-
-					case 40: // down
-						if (cmd_curHist != -1) {
-							if (cmd_curHist + 1 < cmd_cmdHist.length) {
-								cmd_curHist++;
-								document.getElementById("cmd-textbox").value = cmd_cmdHist[cmd_curHist];
-							} else {
-								cmd_curHist = -1;
-								document.getElementById("cmd-textbox").value = "";
-							}
-						}
-
-						break;
+					case 13: cmd.solve(); break; // enter
+					case 38: cmd.back(); break; // up
+					case 40: cmd.forward(); break; // down
+					default:
+						cmd.keydown(e, c);
 				}
-			}
-
-			function cmd_updateMainBoxPos() {
-				var e = document.getElementById("cmd-mainbox");
-				var bg = document.getElementById("cmd-bg");
-
-				e.style.top = ((bg.clientHeight - e.offsetHeight) / 2) + "px";
 
 				return;
 			}
 
 			window.onload = function () {
+				var color_box = [ "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#E67E22", "#E74C3C", "#313131" ];
+				var greets = [
+					"how are you?", "it's a nice day, isn't it?",
+					"hi buddy", "long time no see, huh?",
+					"what's up"
+				];
+				var default_font = document.body.style["font-family"];
 				var e = document.getElementById("cmd-textbox");
-
-				e.removeAttribute("disabled");
-				e.focus();			
+				var qc = document.getElementById("cmd-quickcmd");
+				var font;
 
 				document.getElementById("cmd-bg").style.opacity = "1";
-				cmd_updateMainBoxPos();
+				_updateMainBoxPos();
 
-				cmd_default_font = document.body.style["font-family"];
-
-				var font = getCookie("log31-font");
+				font = getCookie("log31-font");
 				if (font) {
 					document.body.style["font-family"] = font;
 				}
+
+				e.removeAttribute("disabled");
+				e.focus();
+
+				var _setFontHandler = function (argv) {
+					if (argv.length < 2) {
+						_quickTitleMsg("too less arguments");
+					} else {
+						var e = document.body;
+
+						if (argv[1] == "default") {
+							e.style["font-family"] = default_font;
+							_updateMainBoxPos();
+							setCookie("log31-font", default_font);
+						} else {
+							e.style["font-family"] = argv.slice(1).join(" ");
+							_updateMainBoxPos();
+							setCookie("log31-font", e.style["font-family"]);
+						}
+					}
+
+					return;
+				};
+
+				main_cmd = Cmd(e, {
+					qmsg: _quickTitleMsg,
+					jump: _jumpDefaultHandler,
+
+					custom: {
+						color: function (argv) {
+							if (argv.length < 2) {
+								_quickTitleMsg("too less arguments");
+							} else {
+								var e = document.getElementById("cmd-bg");
+								var arg1 = argv[1];
+
+								if (arg1 == "change") {
+									e.style.background = color_box.choose();
+								} else if (arg1.match(/(#[0-9A-Za-z]+)/g)) {
+									e.style.background = arg1;
+								}
+							}
+
+							return;
+						},
+
+						hello: function (argv) {
+							document.getElementById("cmd-bg").style.background = color_box.choose();
+							_quickTitleMsg(greets.choose());
+
+							return;
+						},
+
+						font: _setFontHandler
+					}
+				});
+			
+				var keys = {};
+
+				// esc
+				keys[27] = function (e) {
+					_triggerQuickCmd();
+					return;
+				};
+
+				var _setQCMsg = function (msg, cb) {
+					var e = document.getElementById("cmd-quickcmd");
+					var bg = document.getElementById("cmd-quickcmd-container");
+					var fm = document.getElementById("cmd-main-frame");
+
+					e.disabled = "true";
+
+					var mb = fm.contentWindow.document.getElementById("cmd-mainbox");
+					var back = bg.style.background;
+
+					// bg.style.background = color_box.choose();
+
+					e.value = "";
+					var i, total = 0;
+					var delay = 700 / msg.length / 2;
+
+					for (i = 0; i < msg.length; i++) {
+						setTimeout((function (i) {
+							return function () {
+								e.value = msg.substring(0, i + 1);
+							};
+						})(i), total);
+						total += delay;
+					}
+
+					setTimeout(function () {
+						cb && cb(function (cb2) {
+							total = 0;
+
+							for (i = 0; i < msg.length; i++) {
+								setTimeout((function (i) {
+									return function () {
+										e.value = msg.substring(0, msg.length - i - 1);
+									};
+								})(i), total);
+								total += delay;
+							}
+
+							setTimeout(function () {
+								e.removeAttribute("disabled");
+								bg.style.background = back;
+								cb2 && cb2();
+							}, total);
+						});
+					}, total);
+
+					return;
+				};
+
+				var _quickQCMsg = function (msg, timeout, cb) {
+					_setQCMsg(msg, function (back) {
+						setTimeout(function () {
+							back(cb);
+						}, timeout || 1500);
+					});
+					return;
+				};
+
+				quick_cmd = Cmd(qc, {
+					qmsg: _quickQCMsg,
+
+					jump: function (argv) {
+						_setQCMsg("jumping...", function (init) {
+							_setFrameSrc(argv.join("/"));
+							_setFrameOnload(function () {
+								init(function () {
+									_hideQuickCmd();
+									castToFrame();
+								});
+							});
+						});
+					},
+
+					custom: {
+						back: function () {
+							castToMain();
+							return;
+						},
+
+						font: _setFontHandler,
+						hello: function () {
+							_quickQCMsg(greets.choose(), null, function () {
+								qc.focus();
+							});
+
+							return;
+						}
+					},
+
+					keys: keys
+				});
 			};
 
-			window.onresize = cmd_updateMainBoxPos;
+			window.onresize = _updateMainBoxPos;
 		</script>
 		<div id="cmd-bg" style="opacity: 0;">
 			<div id="cmd-mainbox" class="cmd-mainbox">
@@ -408,10 +496,20 @@
 					class="cmd-textbox"
 					spellcheck=false
 					placeholder="something?"
-					onkeydown="cmd_keydown(event)"
+					style="margin-top: 2em;"
+					onkeydown="_keydown(event, window.main_cmd)"
 				><br>
 				<div id="cmd-underline" class="cmd-underline"></div>
 			</div>
+		</div>
+		<div id="cmd-quickcmd-container" class="cmd-quickcmd-container" style="display: none; opacity: 0;">
+			<input
+				id="cmd-quickcmd"
+				class="cmd-textbox cmd-quickcmd"
+				spellcheck=false
+				placeholder="quick command"
+				onkeydown="_keydown(event, window.quick_cmd)"
+			>
 		</div>
 		<iframe id="cmd-main-frame" class="cmd-main-frame" style="top: 100%;"></iframe>
 	</body>
