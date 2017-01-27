@@ -66,7 +66,7 @@ var handler = {
 					break;
 
 				case "status":
-					res.qerr(400, "I'm pretty fine");
+					res.qmsg("I'm pretty fine");
 					break;
 
 				default:
@@ -103,6 +103,23 @@ http.ServerResponse.prototype.qerr = function (code, msg, type) {
 	this.end();
 
 	console.log(new Date() + ": error " + code + ": " + msg);
+
+	return;
+}
+
+// quick msg
+http.ServerResponse.prototype.qmsg = function (msg, type) {
+	var tmpl = static_addr["static/err.html"].dat.toString();
+
+	this.writeHead(200, { "Content-Type": type || "text/html" });
+	this.write(tmpl.
+		replace(/<\$suc>/g, "true").
+		replace(/<\$msg>/g, msg).
+		replace(/<\$code>/g, 200)
+	);
+	this.end();
+
+	console.log(new Date() + ": quick msg: " + msg);
 
 	return;
 }

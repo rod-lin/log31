@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta http-equiv="Pragma" content="no-cache">
+
+		<link rel="stylesheet" href="/static/font/font-awesome/import.css" />
+		<style>
+			@import "/static/font/UbuntuMono/import.css";
+
+			body {
+				margin: 0;
+				padding: 0;
+
+				height: 100%;
+
+				background: #1B1A1C;
+			}
+
+			.music-box {
+				position: relative;
+
+				height: 20em;
+				width: 25em;
+
+				display: inline-block;
+			
+				border-radius: 5px;
+
+				background: #1F1F1F;
+				box-shadow: 0 5px 20px rgba(0,0,0,0.05), 0 15px 30px -10px rgba(0,0,0,0.3);
+
+				transition: background 0.3s;
+			}
+
+			.music-box:hover {
+				background: #141315;
+			}
+
+			.title {
+				color: #F6F6F6;
+
+				font-family: Consolas, Ubuntu Mono, monospace;
+				font-weight: bold;
+				font-size: 1em;
+			}
+
+			#container {
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				text-align: center;
+			}
+
+			#wave-box {
+				height: 20%;
+				width: 100%;
+
+				margin-top: 10%;
+			}
+
+			#start-btn {
+				color: #F0F0F0;
+				font-size: 4em;
+
+				margin-top: 8%;
+
+				cursor: pointer;
+			}
+
+			@media screen and (max-width: 320px) {
+				.music-box {
+					height: 12em;
+					width: 16em;
+				}
+
+				#start-btn {
+					font-size: 3em;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="container">
+			<div id="musix-box" class="music-box">
+				<div id="wave-box"></div><br>
+				<!--span class="title">The Moon Song</span><br-->
+				<span id="start-btn" class="fa fa-play" onclick="_play()"></span>
+			</div>
+		</div>
+
+		<script src="/static/js/util.js"></script>
+		<script src="/static/js/jquery/jquery.js"></script>
+		<script src="/static/js/wave.js"></script>
+		<script>
+			var wave = Wave({
+				container: "#wave-box",
+				opacity: 0.7
+			});
+
+			wave.setSpeed(0.35);
+			wave.init();
+			// wave.startr();
+
+			function _updatePos() {
+				var e = document.getElementById("musix-box");
+				var bg = document.getElementById("container");
+
+				e.style.top = ((bg.clientHeight - e.offsetHeight) / 2) + "px";
+
+				return;
+			}
+
+			var _has_played = false;
+
+			function _play() {
+				if (_has_played) {
+					document.getElementById("start-btn").addClass("fa-play");
+					document.getElementById("start-btn").removeClass("fa-pause");
+					wave.stopr();
+					_has_played = false;
+				} else {
+					document.getElementById("start-btn").removeClass("fa-play");
+					document.getElementById("start-btn").addClass("fa-pause");
+					wave.startr();
+					_has_played = true;
+				}
+
+				return;
+			}
+
+			window.onload = _updatePos;
+			window.onresize = _updatePos;
+		</script>
+	</body>
+</html>

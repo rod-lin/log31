@@ -17,12 +17,8 @@
 				code: <$code>,
 				msg: "<$msg>"
 			};
-
-			Array.prototype.choose = function () {
-				return this[Math.floor(Math.random() * this.length + 0)];
-			};
-
-			function cmd_updateMainBoxPos() {
+			
+			function _updateMainBoxPos() {
 				var e = document.getElementById("cmd-mainbox");
 				var bg = document.getElementById("cmd-bg");
 
@@ -31,13 +27,8 @@
 				return;
 			}
 
-			function cmd_goto(url) {
-				window.location.href = url;
-				return;
-			}
-
 			window.onload = function () {
-				cmd_updateMainBoxPos();
+				_updateMainBoxPos();
 				document.getElementById("cmd-bg").style.background = [
 					"#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#E67E22", "#E74C3C"
 				].choose();
@@ -48,7 +39,7 @@
 				}
 			};
 
-			window.onresize = cmd_updateMainBoxPos;
+			window.onresize = _updateMainBoxPos;
 		</script>
 		<div id="cmd-bg">
 			<div id="cmd-mainbox" class="cmd-mainbox" style="margin-bottom: 4em;">
