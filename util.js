@@ -25,3 +25,7 @@ exports.walk = function (init, cb) {
 exports.isdir = function (path) {
 	return fs.existsSync(path) && fs.statSync(path).isDirectory();
 }
+
+String.prototype.replacev = function (name, val, raw) {
+	return this.replace(new RegExp("<\\$" + name + ">", "g"), raw ? val : JSON.stringify(val).replace(/<\/script/g, "<\\/script"));
+}

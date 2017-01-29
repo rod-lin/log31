@@ -7,15 +7,9 @@ function Cmd(e, env) {
 	// }
 	var hist = [];
 	var cur_hist = -1;
-	var handler = {
-		"log": env.jump
-	};
+	var handler = env.custom;
 
-	for (key in env.custom) {
-		if (env.custom.hasOwnProperty(key)) {
-			handler[key] = env.custom[key];
-		}
-	}
+	var serv = [ "open", "edit", "new", "delete", "status" ];
 
 	return {
 		solve: function () {
@@ -31,12 +25,17 @@ function Cmd(e, env) {
 			e.placeholder = "";
 			e.blur();
 
-			if (handler.hasOwnProperty(argv[0])) {
+			if (serv.indexOf(argv[0]) != -1) {
+				env.jump(argv);
+				e.focus();
+			} else if (handler.hasOwnProperty(argv[0])) {
 				handler[argv[0]](argv);
 				e.focus();
 			} else {
 				env.qmsg(":( no such command...", null, function () { e.focus(); });
 			}
+
+			return;
 		},
 
 		back: function () {

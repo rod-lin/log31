@@ -15,7 +15,7 @@
 			window.log31msg = {
 				suc: <$suc>,
 				code: <$code>,
-				msg: "<$msg>"
+				msg: <$msg>
 			};
 			
 			function _updateMainBoxPos() {
@@ -28,7 +28,6 @@
 			}
 
 			window.onload = function () {
-				_updateMainBoxPos();
 				document.getElementById("cmd-bg").style.background = [
 					"#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#E67E22", "#E74C3C"
 				].choose();
@@ -37,13 +36,17 @@
 				if (font) {
 					document.body.style["font-family"] = font;
 				}
+
+				document.getElementById("cmd-title").innerHTML = window.log31msg.msg;
+
+				_updateMainBoxPos();
 			};
 
 			window.onresize = _updateMainBoxPos;
 		</script>
 		<div id="cmd-bg">
 			<div id="cmd-mainbox" class="cmd-mainbox" style="margin-bottom: 4em;">
-				<span id="cmd-title" class="cmd-title" style="font-weight: bold;"><$msg></span>
+				<span id="cmd-title" class="cmd-title" style="font-weight: bold;"></span>
 			</div>
 		</div>
 	</body>

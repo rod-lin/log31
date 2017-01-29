@@ -85,3 +85,54 @@ function goto(url) {
 	window.location.href = url;
 	return;
 }
+
+function formatFormParam(obj) {
+	var arr = [];
+	
+	for (var k in obj) {
+		arr.push(encodeURIComponent(k) + "=" + encodeURIComponent(obj[k]));
+	}
+
+	return arr.join("&");
+}
+
+var Ajax = function () {
+	var req = null;
+	
+	try {
+		req = new XMLHttpRequest();
+	} catch (e) { IE
+		try {
+			req = new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			try {
+				req = new ActiveXObject("Microsoft.XMLHTTP");
+			} catch (e) {
+				return null;
+			}
+		}
+	}
+
+	return {
+		post: function (url, obj, cb) {
+			req.open("POST", url);
+			req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+			req.send(formatFormParam(obj));
+			req.onreadystatechange = function () {
+				if (req.readyState == 4) {
+					cb(req.status == 200, req.responseText);
+				}
+			};
+		},
+
+		get: function (url, obj, cb) {
+			req.open("GET", url + "?" + formatFormParam(obj));
+			req.send();
+			req.onreadystatechange = function () {
+				if (req.readyState == 4) {
+					cb(req.status == 200, req.responseText);
+				}
+			};
+		}
+	};
+}

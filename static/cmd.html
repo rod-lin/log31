@@ -118,18 +118,25 @@
 				return document.getElementById("cmd-main-frame").contentWindow.log31msg;
 			}
 
+			function _getFrameEdit() {
+				return document.getElementById("cmd-main-frame").contentWindow.log31edit;
+			}
+
 			function _showFrame() {
 				var e = document.getElementById("cmd-main-frame");
 
 				// e.style.display = "";
 				e.style.top = "0";
-				document.getElementById("cmd-quickcmd-container").style.display = "";
 
 				_focusFrame();
-				_setFrameOnKeyDown(function (e) {
-					if (e.keyCode == 27)
-						_triggerQuickCmd();
-				});
+
+				setTimeout(function () {
+					document.getElementById("cmd-quickcmd-container").style.display = "";
+					_setFrameOnKeyDown(function (e) {
+						if (e.keyCode == 27)
+							_triggerQuickCmd();
+					});
+				}, 1000);
 
 				return;
 			}
@@ -233,7 +240,7 @@
 					setTimeout(function () {
 						if (loaded) cast();
 						end = true;
-					}, 1000);
+					}, 500);
 				});
 
 				return;
@@ -442,29 +449,34 @@
 					return;
 				};
 
-				var _quickQCMsg = function (msg, timeout, cb) {
-					_setQCMsg(msg, function (back) {
+				var _quickQCMsg = function (msg) {
+					_setQCMsg(msg, function (clear) {
 						setTimeout(function () {
-							back(cb);
-						}, timeout || 1500);
+							clear(function () {
+								qc.focus();
+							});
+						}, /* timeout || */ 1500);
 					});
 					return;
 				};
 
-				quick_cmd = Cmd(qc, {
-					qmsg: _quickQCMsg,
-
-					jump: function (argv) {
-						_setQCMsg("jumping...", function (init) {
-							_setFrameSrc(argv.join("/"));
-							_setFrameOnload(function () {
-								init(function () {
-									_hideQuickCmd();
-									castToFrame();
-								});
+				var _jump = function (argv) {
+					_setQCMsg("jumping...", function (init) {
+						_setFrameSrc(argv.join("/"));
+						_setFrameOnload(function () {
+							init(function () {
+								_hideQuickCmd();
+								castToFrame();
 							});
 						});
-					},
+					});
+				};
+
+				var _save_req = Ajax();
+
+				quick_cmd = Cmd(qc, {
+					qmsg: _quickQCMsg,
+					jump: _jump,
 
 					custom: {
 						back: function () {
@@ -474,11 +486,40 @@
 
 						font: _setFontHandler,
 						hello: function () {
-							_quickQCMsg(greets.choose(), null, function () {
-								qc.focus();
-							});
+							_quickQCMsg(greets.choose());
 
 							return;
+						},
+
+						save: function (argv) {
+							var editor = _getFrameEdit();
+
+							if (!editor) {
+								_quickQCMsg("no editor detected");
+							}
+
+							var val = editor.value();
+
+							if (argv.length < 2) {
+								argv.push(editor.logno);
+								argv.push(editor.parser);
+							}
+
+							_setQCMsg("saving...", function (clear) {
+								_save_req.post(argv.join("/"), { meta: val }, function (suc, res) {
+									if (!suc) {
+										clear(function () { _quickQCMsg("internal error") });
+									} else {
+										var res = JSON.parse(res);
+
+										if (res.suc) {
+											clear(function () { _quickQCMsg("saved."); });
+										} else {
+											clear(function () { _quickQCMsg(res.msg); });
+										}
+									}
+								});
+							});
 						}
 					},
 

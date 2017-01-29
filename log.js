@@ -4,6 +4,14 @@ var util = require("./util.js");
 var logs = {};
 var parsers = {};
 
+function logpath(logno, parser) {
+	return "log/" + logno + "." + parser;
+}
+
+function valid(logno) {
+	return logno >= 0 && logno <= 999999;
+}
+
 function initParser() {
 	parsers["html"] = {
 		parse: function (meta) {
@@ -75,11 +83,7 @@ exports.init = function () {
 };
 
 exports.get = function (logno) {
-	if (logs[logno]) {
-		return logs[logno].cont;
-	}
-
-	return undefined;
+	return logs[logno];
 };
 
 exports.parse = function (logno) {
@@ -95,3 +99,59 @@ exports.parse = function (logno) {
 
 	return parsers.html.parse(l.cont);
 };
+
+exports.hasParser = function (parser) {
+	return parsers.hasOwnProperty(parser);
+};
+
+exports.hasLog = function (logno) {
+	return logs[logno] != undefined;
+};
+
+exports.saveLog = function (logno, parser, cont, cb) {
+	var l = logs[logno];
+	var sync = function () {
+		fs.writeFile(logpath(logno, l.parser), cont, function (err) {
+			if (err) {
+				failed();
+				cb({ suc: false, msg: "failed to write file" });
+			} else {
+				cb({ suc: true });
+				console.log((new Date()) + ": log: log saved " + logpath(logno, l.parser));
+			}
+		});
+
+		return;
+	};
+
+	var failed;
+
+	if (!l) {
+		failed = function () {
+			delete logs[logno];
+			return;
+		};
+
+		l = logs[logno] = { cont: cont, parser: parser };
+	} else {
+		failed = function () {};
+		l.cont = cont;
+	}
+
+	if (l.parser != parser) {
+		fs.rename(logpath(logno, l.parser), logpath(logno, parser), function (err) {
+			if (err) {
+				failed();
+				cb({ suc: false, msg: "failed to rename" });
+			} else {
+				console.log((new Date()) + ": log: log renamed " + logpath(logno, l.parser) + " => " + logpath(logno, parser));
+				l.parser = parser;
+				sync();
+			}
+		});
+	} else sync();
+
+	return;
+}
+
+exports.valid = valid;

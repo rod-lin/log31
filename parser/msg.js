@@ -1,12 +1,14 @@
 var fs = require("fs");
+var util = require("../util.js");
+
 var tmplate = fs.readFileSync("static/err.html").toString();
 
 exports.parse = function (meta) {
 	return {
 		suc: true,
 		cont: tmplate.
-			replace(/<\$suc>/g, "true").
-			replace(/<\$msg>/g, meta).
-			replace(/<\$code>/g, 200)
+			replacev("suc", true).
+			replacev("msg", meta.toString()).
+			replacev("code", 200)
 	};
 };

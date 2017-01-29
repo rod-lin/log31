@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta http-equiv="Pragma" content="no-cache">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="/static/js/codemirror/lib/codemirror.css">
+		<link rel="stylesheet" href="/static/js/codemirror/theme/monokai.css">
+
+		<link rel="stylesheet" href="/static/css/editor.css">
+
+		<script src="/static/js/codemirror/lib/codemirror.js"></script>
+
+		<script src="/static/js/codemirror/mode/xml/xml.js"></script>
+		<script src="/static/js/codemirror/mode/javascript/javascript.js"></script>
+		<script src="/static/js/codemirror/mode/css/css.js"></script>
+		<script src="/static/js/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+	</head>
+
+	<body>
+		<textarea id="main-editor"></textarea>
+		<script>
+			var editor = CodeMirror.fromTextArea(document.getElementById("main-editor"), {
+				mode: "text/html",
+				theme: "monokai",
+
+				lineNumbers: true,
+				indentWithTabs: true,
+				indentUnit: 4
+			});
+
+			editor.focus();
+
+			editor.setValue(<$cont>);
+
+			var log31edit = {
+				value: function () {
+					return editor.getValue();
+				},
+
+				set: function (cont) {
+					editor.setValue(cont);
+					return;
+				},
+
+				logno: <$logno>,
+				parser: <$parser>
+			};
+		</script>
+	</body>
+</html>
